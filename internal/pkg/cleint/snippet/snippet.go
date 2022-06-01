@@ -15,10 +15,15 @@ type List struct {
 	Data []*Snippet `json:"data"`
 }
 
+type Ping struct {
+	Status string `json:"status"`
+}
+
 type Client interface {
 	CreateSnippet(title string, content string) (string, error)
 	GetSnippets() ([]*Snippet, error)
 	GetSnippet(snippetID string) (*Snippet, error)
+	Ping() (string, error)
 }
 
 type clientImpl struct {
@@ -45,6 +50,25 @@ func NewHTTPSClient(host string, port int) Client {
 		Host:   host,
 		Port:   port,
 	}
+}
+
+func (c clientImpl) Ping() (string, error) {
+	url := fmt.Sprintf("%s/api/v1/ping", c.Addr())
+	resp, err := resty.New().R().Get(url)
+
+	if err != nil {
+		return "", err
+	}
+
+	respBody := resp.Body()
+	var ping Ping
+	err = json.Unmarshal(respBody, &ping)
+
+	if err != nil {
+		return "", err
+	}
+
+	return ping.Status, nil
 }
 
 func (c clientImpl) CreateSnippet(title string, content string) (string, error) {
