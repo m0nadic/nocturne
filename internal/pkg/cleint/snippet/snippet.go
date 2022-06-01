@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/golang-jwt/jwt/v4"
+	"time"
 )
 
 type Snippet struct {
@@ -27,28 +29,31 @@ type Client interface {
 }
 
 type clientImpl struct {
-	Scheme string
-	Host   string
-	Port   int
+	Scheme     string
+	Host       string
+	Port       int
+	SigningKey string
 }
 
 func (c clientImpl) Addr() string {
 	return fmt.Sprintf("%s://%s:%d", c.Scheme, c.Host, c.Port)
 }
 
-func NewClient(host string, port int) Client {
+func NewClient(host string, port int, signingKey string) Client {
 	return &clientImpl{
-		Scheme: "http",
-		Host:   host,
-		Port:   port,
+		Scheme:     "http",
+		Host:       host,
+		Port:       port,
+		SigningKey: signingKey,
 	}
 }
 
-func NewHTTPSClient(host string, port int) Client {
+func NewHTTPSClient(host string, port int, signingKey string) Client {
 	return &clientImpl{
-		Scheme: "https",
-		Host:   host,
-		Port:   port,
+		Scheme:     "https",
+		Host:       host,
+		Port:       port,
+		SigningKey: signingKey,
 	}
 }
 
@@ -82,8 +87,15 @@ func (c clientImpl) CreateSnippet(title string, content string) (string, error) 
 		Content: content,
 	}
 
+	token, err := createToken(c.SigningKey)
+
+	if err != nil {
+		return "", err
+	}
+
 	resp, err := resty.New().R().
 		SetHeader("Content-Type", "application/json").
+		SetHeader("Authorization", fmt.Sprintf("Bearer %v", token)).
 		SetBody(body).
 		SetResult(&Snippet{}).
 		Post(url)
@@ -105,8 +117,15 @@ func (c clientImpl) CreateSnippet(title string, content string) (string, error) 
 
 func (c clientImpl) GetSnippets() ([]*Snippet, error) {
 	url := fmt.Sprintf("%s/api/v1/snippets", c.Addr())
+	token, err := createToken(c.SigningKey)
 
-	resp, err := resty.New().R().Get(url)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := resty.New().R().
+		SetHeader("Authorization", fmt.Sprintf("Bearer %v", token)).
+		Get(url)
 
 	if err != nil {
 		return nil, err
@@ -124,12 +143,19 @@ func (c clientImpl) GetSnippets() ([]*Snippet, error) {
 }
 
 func (c clientImpl) GetSnippet(snippetID string) (*Snippet, error) {
-	url := fmt.Sprintf("%s/api/v1/snippets/{snippetId}", c.Addr())
-	client := resty.New()
 
-	resp, err := client.R().SetPathParams(map[string]string{
+	url := fmt.Sprintf("%s/api/v1/snippets/{snippetId}", c.Addr())
+	token, err := createToken(c.SigningKey)
+
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := resty.New().R().SetPathParams(map[string]string{
 		"snippetId": snippetID,
-	}).Get(url)
+	}).
+		SetHeader("Authorization", fmt.Sprintf("Bearer %v", token)).
+		Get(url)
 
 	if err != nil {
 		return nil, err
@@ -144,4 +170,17 @@ func (c clientImpl) GetSnippet(snippetID string) (*Snippet, error) {
 	}
 
 	return &snippet, nil
+}
+
+func createToken(signingKey string) (string, error) {
+	signingKeyBytes := []byte(signingKey)
+
+	// Create the Claims
+	claims := &jwt.StandardClaims{
+		ExpiresAt: time.Now().Add(time.Minute * 1).Unix(),
+		Issuer:    "private",
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(signingKeyBytes)
 }

@@ -7,6 +7,7 @@ import (
 
 var host string
 var port int
+var signingKey string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -26,5 +27,5 @@ func Execute() {
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&host, "host", "b", "localhost", "host address")
 	rootCmd.PersistentFlags().IntVarP(&port, "port", "p", 4000, "host port")
-
+	rootCmd.PersistentFlags().StringVarP(&signingKey, "key", "k", "s3cr3t", "signing key")
 }

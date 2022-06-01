@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/jaswdr/faker"
 	"github.com/spf13/cobra"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -30,13 +28,6 @@ var bootstrapCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		for i := 0; i < 10; i++ {
-			db.Create(&model.Snippet{
-				SnippetID: uuid.New().String(),
-				Title:     faker.New().Lorem().Sentence(5),
-				Content:   faker.New().Lorem().Paragraph(5),
-			})
-		}
 		db.Commit()
 	},
 }

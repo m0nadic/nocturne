@@ -13,7 +13,7 @@ var showCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Displays the details of a snippet",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := snippet.NewClient(host, port)
+		client := snippet.NewClient(host, port, signingKey)
 
 		for _, arg := range args {
 

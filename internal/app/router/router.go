@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"nocturne/internal/app/handler"
+	"nocturne/internal/app/middleware"
 	"nocturne/internal/app/repository"
 	"nocturne/internal/app/service"
 )
@@ -14,14 +15,16 @@ type Handlers struct {
 }
 
 type Router struct {
-	Handlers *Handlers
+	Handlers   *Handlers
+	SigningKey string
 }
 
-func NewRouter(db *gorm.DB) *Router {
+func NewRouter(db *gorm.DB, signingKey string) *Router {
 	snippetRepository := repository.NewSnippetRepository(db)
 	snippetService := service.NewSnippetService(snippetRepository)
 
 	return &Router{
+		SigningKey: signingKey,
 		Handlers: &Handlers{
 			HealthHandler:  handler.HealthHandler{},
 			SnippetHandler: handler.NewSnippetHandler(snippetService),
@@ -39,6 +42,8 @@ func (router Router) Init() *gin.Engine {
 	v1Namespace.GET("/ping",
 		router.Handlers.HealthHandler.Status,
 	)
+
+	v1Namespace.Use(middleware.PrivateAuthMiddleware(router.SigningKey))
 
 	v1Namespace.POST("/snippets",
 		router.Handlers.SnippetHandler.CreateSnippet,

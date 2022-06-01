@@ -17,7 +17,7 @@ var pingCmd = &cobra.Command{
 	Use:   "ping",
 	Short: "Pings the server",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := snippet.NewClient(host, port)
+		client := snippet.NewClient(host, port, signingKey)
 		ping, err := client.Ping()
 
 		if err != nil {

@@ -7,7 +7,7 @@ import (
 	"nocturne/internal/app/router"
 )
 
-func InitHttpServer(host string, port int, dbPath string) error {
+func InitHttpServer(host string, port int, dbPath string, signingKey string) error {
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 
 	if err != nil {
@@ -15,5 +15,5 @@ func InitHttpServer(host string, port int, dbPath string) error {
 	}
 
 	addr := fmt.Sprintf("%s:%d", host, port)
-	return router.NewRouter(db).Init().Run(addr)
+	return router.NewRouter(db, signingKey).Init().Run(addr)
 }

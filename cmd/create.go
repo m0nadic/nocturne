@@ -17,7 +17,7 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create a snippet in server.",
 	Run: func(cmd *cobra.Command, args []string) {
-		client := snippet.NewClient(host, port)
+		client := snippet.NewClient(host, port, signingKey)
 		snippetID, err := client.CreateSnippet(title, content)
 
 		if err != nil {
