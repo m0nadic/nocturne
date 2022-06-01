@@ -1,29 +1,30 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"nocturne/internal/app/server"
+	"os"
 )
+
+var dbPath string
 
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the http server",
 	Run: func(cmd *cobra.Command, args []string) {
-		server.InitHttpServer("0.0.0.0", 4000, "./nocturne.db")
+		log.Printf("Starting server at %s:%d with %s", host, port, dbPath)
+		err := server.InitHttpServer(host, port, dbPath)
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, "ERROR:", err)
+			os.Exit(1)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// serveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// serveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	serveCmd.Flags().StringVarP(&dbPath, "db", "d", "./nocturne.db", "full path of sqlite db")
 }
